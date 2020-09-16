@@ -1,0 +1,45 @@
+
+{{ define "objectlist" }}
+  {{ template "header" }}
+    <!-- Page Heading -->
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Buckets</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ .BName}}</li>
+      </ol>
+    </nav>
+    <div class="row">
+
+      <div class="col-xl-12 col-lg-12">
+        <div class="card shadow mb-4">
+          <!-- Card Body -->
+          <div class="card-body">            
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Last Modified</th>
+                  <th scope="col">Size</th>
+                  <th scope="col">Storage Class</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{ range $index, $a := .OList }}
+                <tr>
+                  <th scope="row">{{add $index 1}}</th>
+                  <td><a href="">{{ .Key}}</a></td>
+                  <td><a href="">{{ .LastModified}}</a></td>
+                  <td><a href="">{{ .Size}}</a></td>
+                  <td><a href="">{{ .StorageClass}}</a></td>
+                </tr>
+                {{ end }} 
+              </tbody>
+            </table>    
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  {{ template "footer" }}
+{{ end }}           

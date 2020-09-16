@@ -1,0 +1,40 @@
+
+{{ define "bucketlist" }}
+  {{ template "header" }}
+    <!-- Page Heading -->
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item active">Buckets</li>
+      </ol>
+    </nav>
+    <div class="row">
+
+      <div class="col-xl-12 col-lg-12">
+        <div class="card shadow mb-4">
+          <!-- Card Body -->
+          <div class="card-body">            
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{ range $index, $a := .BList }}
+                <tr>
+                  <th scope="row">{{add $index 1}}</th>
+                  <td><a href="/objectlist?bucketName={{.Name}}">{{.Name}}</a></td>
+                  <td>{{.CreationDate}}</td>
+                </tr>
+                {{ end }} 
+              </tbody>
+            </table>    
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  {{ template "footer" }}
+{{ end }}           
