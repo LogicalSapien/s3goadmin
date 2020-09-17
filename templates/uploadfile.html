@@ -1,0 +1,29 @@
+
+{{ define "uploadfile" }}
+  {{ template "header" .}}
+    <!-- Page Heading -->
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Buckets</a></li>
+        <li class="breadcrumb-item active" aria-current="page"><a href="/objectlist?bucketName={{.BName}}">{{ .BName}}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Upload</li>
+      </ol>
+    </nav>
+    <div class="row">
+
+      <div class="col-xl-12 col-lg-12">
+        <div class="card shadow mb-4">
+          <!-- Card Body -->
+          <div class="card-body">            
+            <form enctype="multipart/form-data" action="/uploadaction?bucketName={{.BName}}" method="post">
+              <input type="file" name="uploadfile" />
+              <input type="hidden" name="bucketName" value="{{.BName}}"/>
+              <input type="submit" value="upload" />
+          </form>  
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  {{ template "footer" }}
+{{ end }}           

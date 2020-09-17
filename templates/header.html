@@ -17,6 +17,11 @@
 
   <!-- Custom styles for this template-->
   <link href="../css/sb-admin-2.min.css" rel="stylesheet">
+  <link href="../css/custom.css" rel="stylesheet">
+
+   <!-- Bootstrap core JavaScript-->
+   <script src="js/jquery.min.js"></script>
+   <script src="js/bootstrap.bundle.min.js"></script>
 
 </head>
 
@@ -71,4 +76,21 @@
 
         <!-- Begin Page Content -->
         <div class="container-fluid">
+        {{if .SuccessM}}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ .SuccessM}}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {{end}}
+        {{if .ErrorM}}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ .ErrorM}}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {{end}}
+      
 {{end}}

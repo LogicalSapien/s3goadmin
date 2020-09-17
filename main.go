@@ -15,9 +15,11 @@ import (
 
 // PageVars structs
 type PageVars struct {
-	BList []*s3.Bucket
-	OList []*s3.Object
-	BName string
+	BList    []*s3.Bucket
+	OList    []*s3.Object
+	BName    string
+	ErrorM   string
+	SuccessM string
 }
 
 // AwsCred for connection
@@ -27,29 +29,33 @@ type AwsCred struct {
 	Region string
 }
 
-var s3Svc *s3.S3
+var sess *session.Session
 var tpl *template.Template
 
 func init() {
 	//parse the template file held in the templates folder
-
 	//add the custom add function to template
 	funcs := template.FuncMap{"add": add}
 	tpl = template.Must(template.New("*").Funcs(funcs).ParseGlob("templates/*"))
+
+	// create aws session
+	createSession()
+
 }
 
 func main() {
 
-	// initialize s3 client
-	s3Svc = getS3Svc()
-
 	// serve everything in the css folder, the img folder and mp3 folder as a file
 	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("css"))))
 	http.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir("img"))))
+	http.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir("js"))))
 
 	// when navigating to /home it should serve the home page
 	http.HandleFunc("/", ListBuckets)
 	http.HandleFunc("/objectlist", GetObjects)
+	http.HandleFunc("/uploadfile", UploadFile)
+	http.HandleFunc("/uploadaction", PutFile)
+	http.HandleFunc("/downloadfile", DownloadFile)
 	http.ListenAndServe(getPort(), nil)
 
 }
@@ -71,14 +77,14 @@ func getAwsCred() AwsCred {
 	if akey != "" {
 		c.Akey = akey
 	} else {
-		c.Akey = ""
+		c.Akey = "AKIA2BS6VFNIMNDDOUUB"
 	}
 	// Get secret key
 	skey := os.Getenv("SECRET_ACCESS")
 	if akey != "" {
 		c.Skey = skey
 	} else {
-		c.Skey = ""
+		c.Skey = "h/aUsMHvfxChEV2QILfatRgyttzqRotpdyakVglm"
 	}
 	// region
 	reg := os.Getenv("REGION")
@@ -91,12 +97,12 @@ func getAwsCred() AwsCred {
 	return c
 }
 
-func getS3Svc() *s3.S3 {
+func createSession() {
 	// Initialize a session in provided region that the SDK will use to load
 	// get credentials
 	c := getAwsCred()
 	// credentials can also be in ~/.aws/credentials.
-	sess, err := session.NewSession(&aws.Config{
+	s, err := session.NewSession(&aws.Config{
 		Region:      aws.String(c.Region),
 		Credentials: credentials.NewStaticCredentials(c.Akey, c.Skey, "")},
 	)
@@ -105,10 +111,8 @@ func getS3Svc() *s3.S3 {
 		exitErrorf("Unable to connect to Server, %v", err)
 	}
 
-	// Create S3 service client
-	svc := s3.New(sess)
-
-	return svc
+	// assign session to global variable
+	sess = s
 }
 
 // for rendeing templates
@@ -128,4 +132,19 @@ func add(x, y int) int {
 func exitErrorf(msg string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, msg+"\n", args...)
 	os.Exit(1)
+}
+
+func addPageVars(r *http.Request, p *PageVars) {
+	bucketName := r.URL.Query().Get("bucketName")
+	if len(bucketName) > 0 {
+		p.BName = bucketName
+	}
+	errorM := r.URL.Query().Get("errorM")
+	if len(errorM) > 0 {
+		p.ErrorM = errorM
+	}
+	successM := r.URL.Query().Get("successM")
+	if len(successM) > 0 {
+		p.SuccessM = successM
+	}
 }

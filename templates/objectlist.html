@@ -1,11 +1,12 @@
 
 {{ define "objectlist" }}
-  {{ template "header" }}
+  {{ template "header" .}}
     <!-- Page Heading -->
     <nav>
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="/">Buckets</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ .BName}}</li>
+        <li class="breadcrumb-item active" aria-current="page">{{ .BName}}&nbsp;&nbsp;
+          <a href="/uploadfile?bucketName={{.BName}}"><i class="mt-1 fa fa-upload"></a></i></li>
       </ol>
     </nav>
     <div class="row">
@@ -22,16 +23,19 @@
                   <th scope="col">Last Modified</th>
                   <th scope="col">Size</th>
                   <th scope="col">Storage Class</th>
+                  <th scope="col">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {{ range $index, $a := .OList }}
                 <tr>
                   <th scope="row">{{add $index 1}}</th>
-                  <td><a href="">{{ .Key}}</a></td>
-                  <td><a href="">{{ .LastModified}}</a></td>
-                  <td><a href="">{{ .Size}}</a></td>
-                  <td><a href="">{{ .StorageClass}}</a></td>
+                  <td><a href="">{{ .Key}}</a> &nbsp;
+                      <a class="download" href="/downloadfile?bucketName={{$.BName}}&fileName={{ .Key}}"><i class="fa fa-download"></a></td>
+                  <td>{{ .LastModified}}</td>
+                  <td>{{ .Size}}</td>
+                  <td>{{ .StorageClass}}</td>
+                  <td><a href="/downloadfile?bucketName={{$.BName}}&fileName={{ .Key}}"><i class="fa fa-download"></a></td>
                 </tr>
                 {{ end }} 
               </tbody>
