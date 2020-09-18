@@ -15,8 +15,12 @@
           <!-- Card Body -->
           <div class="card-body">            
             <form action="/createbucketaction" method="post">
-              <input type="text" name="bucketName" requir ed>
-              <input type="submit" value="Upload" class="btn btn-primary" />
+              <div class="form-group">
+                <label for="bucketName">Bucket Name</label>
+                <input type="text" class="form-control" id="bucketName" aria-describedby="emailHelp" placeholder="Enter bucketname" name="bucketName">
+                <small id="emailHelp" class="form-text text-muted">Please enter a valid bucket name.</small>
+              </div>
+              <button type="submit" class="btn btn-primary">Submit</button>
           </form>  
           </div>
         </div>

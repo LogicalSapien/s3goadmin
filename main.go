@@ -55,11 +55,12 @@ func main() {
 	http.HandleFunc("/", ListBuckets)
 	http.HandleFunc("/objectlist", GetObjects)
 	http.HandleFunc("/uploadfile", UploadFile)
-	http.HandleFunc("/uploadaction", PutFile)
-	http.HandleFunc("/downloadfile", DownloadFile)
-	http.HandleFunc("/deleteaction", DeleteItem)
+	http.HandleFunc("/uploadaction", UploadAction)
+	http.HandleFunc("/downloadfileaction", DownloadFileAction)
+	http.HandleFunc("/deleteobjectaction", DeleteObjectAction)
 	http.HandleFunc("/createbucket", CreateBucket)
 	http.HandleFunc("/createbucketaction", CreateBucketAction)
+	http.HandleFunc("/deletebucketaction", DeleteBucketAction)
 	http.ListenAndServe(getPort(), nil)
 
 }
@@ -81,14 +82,14 @@ func getAwsCred() AwsCred {
 	if akey != "" {
 		c.Akey = akey
 	} else {
-		c.Akey = "AKIA2BS6VFNIMNDDOUUB"
+		c.Akey = ""
 	}
 	// Get secret key
 	skey := os.Getenv("SECRET_ACCESS")
 	if akey != "" {
 		c.Skey = skey
 	} else {
-		c.Skey = "h/aUsMHvfxChEV2QILfatRgyttzqRotpdyakVglm"
+		c.Skey = ""
 	}
 	// region
 	reg := os.Getenv("REGION")

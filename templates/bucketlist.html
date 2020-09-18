@@ -56,7 +56,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            <a href="/deleteaction"><button type="button" class="btn btn-danger">YES</button></a>          </div>
+            <a href="/deletebucketaction"><button type="button" class="btn btn-danger">YES</button></a>          </div>
         </div>
       </div>
     </div>
@@ -67,7 +67,7 @@
       var bucketName = button.data('bucketname')
       var modal = $(this)
       $("#h2Id").text('Do you really want to delete the bucket :  ' + bucketName);
-      $("a[href*='/deleteaction']").attr('href', '/deleteaction?bucketName=' + bucketName)
+      $("a[href*='/deletebucketaction']").attr('href', '/deletebucketaction?bucketName=' + bucketName)
     })
     </script>
   {{ template "footer" }}

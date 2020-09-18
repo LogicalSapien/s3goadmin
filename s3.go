@@ -4,8 +4,10 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
@@ -15,12 +17,18 @@ func ListBuckets(w http.ResponseWriter, r *http.Request) {
 
 	svc := s3.New(sess)
 
-	// get bucket list fomr s3 api
-	result, err := svc.ListBuckets(nil)
 	pageVars := PageVars{}
 	addPageVars(r, &pageVars)
+
+	// get bucket list fomr s3 api
+	result, err := svc.ListBuckets(nil)
+
 	if err != nil {
-		pageVars.ErrorM = "Failed to load buckets list"
+		if awsErr, ok := err.(awserr.Error); ok {
+			pageVars.ErrorM = awsErr.Message()
+		} else {
+			pageVars.ErrorM = "Failed to load buckets list"
+		}
 	} else {
 		pageVars.BList = result.Buckets
 	}
@@ -37,7 +45,9 @@ func GetObjects(w http.ResponseWriter, r *http.Request) {
 	addPageVars(r, &pageVars)
 
 	if len(pageVars.BName) <= 0 {
-		pageVars.ErrorM = "Invalid bucket name"
+		if len(pageVars.ErrorM) <= 0 {
+			pageVars.ErrorM = "Invalid bucket name"
+		}
 		render(w, "objectlist", pageVars)
 	} else {
 		bucket := aws.String(pageVars.BName)
@@ -46,7 +56,11 @@ func GetObjects(w http.ResponseWriter, r *http.Request) {
 		resp, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: bucket})
 
 		if err != nil {
-			pageVars.ErrorM = "Failed to get objects"
+			if awsErr, ok := err.(awserr.Error); ok {
+				pageVars.ErrorM = awsErr.Message()
+			} else {
+				pageVars.ErrorM = "Failed to get objects"
+			}
 		} else {
 			pageVars.OList = resp.Contents
 		}
@@ -56,8 +70,8 @@ func GetObjects(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// PutFile to upload file tot aws s3
-func PutFile(w http.ResponseWriter, r *http.Request) {
+// UploadAction to upload file to aws s3
+func UploadAction(w http.ResponseWriter, r *http.Request) {
 
 	pageVars := PageVars{}
 	addPageVars(r, &pageVars)
@@ -89,7 +103,11 @@ func PutFile(w http.ResponseWriter, r *http.Request) {
 			})
 
 			if err != nil {
-				http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Error in uploading to S3", http.StatusSeeOther)
+				if awsErr, ok := err.(awserr.Error); ok {
+					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM="+awsErr.Message(), http.StatusSeeOther)
+				} else {
+					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Error in uploading to S3", http.StatusSeeOther)
+				}
 			} else {
 				http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&successM=Successfully uploaded", http.StatusSeeOther)
 			}
@@ -110,50 +128,60 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	render(w, "uploadfile", pageVars)
 }
 
-// DownloadFile is handler for /downloadfile
-func DownloadFile(w http.ResponseWriter, r *http.Request) {
-
-	bp := r.URL.Query().Get("bucketName")
-	fp := r.URL.Query().Get("fileName")
-
-	bucket := aws.String(bp)
-	filename := aws.String(fp)
-
-	file, err := os.Create(*filename)
+// DownloadFileAction is handler for /downloadfile
+func DownloadFileAction(w http.ResponseWriter, r *http.Request) {
 
 	pageVars := PageVars{}
-	if err != nil {
-		pageVars.ErrorM = "Error in downloading"
-		render(w, "objectlist", pageVars)
+	addPageVars(r, &pageVars)
+
+	bucket := aws.String(pageVars.BName)
+	filename := aws.String(pageVars.FName)
+	filenameReplaced := aws.String(strings.Replace(pageVars.FName, "/", "_", -1))
+
+	if len(pageVars.BName) <= 0 {
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Invalid bucket namee", http.StatusSeeOther)
+	} else if len(pageVars.FName) <= 0 {
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Invalid file name", http.StatusSeeOther)
 	} else {
-		defer file.Close()
 
-		downloader := s3manager.NewDownloader(sess)
-
-		_, err = downloader.Download(file,
-			&s3.GetObjectInput{
-				Bucket: bucket,
-				Key:    filename,
-			})
+		file, err := os.Create(*filenameReplaced)
 
 		if err != nil {
-			pageVars.ErrorM = "Failed to get object"
-			render(w, "objectlist", pageVars)
+			http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Error in downloading", http.StatusSeeOther)
 		} else {
-			//copy the relevant headers. If you want to preserve the downloaded file name, extract it with go's url parser.
-			w.Header().Set("Content-Disposition", "attachment; filename="+fp)
-			w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-			w.Header().Set("Content-Length", r.Header.Get("Content-Length"))
+			defer file.Close()
 
-			//stream the body to the client without fully loading it into memory
-			io.Copy(w, file)
+			downloader := s3manager.NewDownloader(sess)
+
+			_, err = downloader.Download(file,
+				&s3.GetObjectInput{
+					Bucket: bucket,
+					Key:    filename,
+				})
+
+			if err != nil {
+				if awsErr, ok := err.(awserr.Error); ok {
+					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM="+awsErr.Message(), http.StatusSeeOther)
+				} else {
+					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Failed to get object", http.StatusSeeOther)
+				}
+			} else {
+				//copy the relevant headers. If you want to preserve the downloaded file name, extract it with go's url parser.
+				w.Header().Set("Content-Disposition", "attachment; filename="+pageVars.FName)
+				w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+				w.Header().Set("Content-Length", r.Header.Get("Content-Length"))
+
+				//stream the body to the client without fully loading it into memory
+				io.Copy(w, file)
+			}
+			os.Remove(*filenameReplaced)
 		}
 	}
 
 }
 
-// DeleteItem handler to delete items in s3
-func DeleteItem(w http.ResponseWriter, r *http.Request) {
+// DeleteObjectAction handler to delete items in s3
+func DeleteObjectAction(w http.ResponseWriter, r *http.Request) {
 
 	svc := s3.New(sess)
 
@@ -163,7 +191,7 @@ func DeleteItem(w http.ResponseWriter, r *http.Request) {
 	if len(pageVars.BName) <= 0 {
 		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Invalid bucket namee", http.StatusSeeOther)
 	} else if len(pageVars.FName) <= 0 {
-		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.FName+"&errorM=Invalid file namee", http.StatusSeeOther)
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Invalid file name", http.StatusSeeOther)
 	} else {
 		bucket := aws.String(pageVars.BName)
 		item := aws.String(pageVars.FName)
@@ -174,14 +202,22 @@ func DeleteItem(w http.ResponseWriter, r *http.Request) {
 		})
 
 		if err != nil {
-			http.Redirect(w, r, "/objectlist?bucketName="+pageVars.FName+"&errorM=Failed to delete", http.StatusSeeOther)
+			if awsErr, ok := err.(awserr.Error); ok {
+				http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM="+awsErr.Message(), http.StatusSeeOther)
+			} else {
+				http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Failed to delete", http.StatusSeeOther)
+			}
 		} else {
 			err = svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
 				Bucket: bucket,
 				Key:    item,
 			})
 			if err != nil {
-				http.Redirect(w, r, "/objectlist?bucketName="+pageVars.FName+"&errorM=Failed to delete", http.StatusSeeOther)
+				if awsErr, ok := err.(awserr.Error); ok {
+					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM="+awsErr.Message(), http.StatusSeeOther)
+				} else {
+					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Failed to delete", http.StatusSeeOther)
+				}
 			} else {
 				http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&successM=Successfully deleted", http.StatusSeeOther)
 			}
@@ -215,10 +251,55 @@ func CreateBucketAction(w http.ResponseWriter, r *http.Request) {
 			Bucket: aws.String(bucket),
 		})
 		if err != nil {
-			http.Redirect(w, r, "/bucketlist?errorM=Failed to create bucket", http.StatusSeeOther)
+			if awsErr, ok := err.(awserr.Error); ok {
+				// process SDK error
+				http.Redirect(w, r, "/createbucket?errorM="+awsErr.Message(), http.StatusSeeOther)
+			} else {
+				http.Redirect(w, r, "/createbucket?errorM=Failed to create bucket", http.StatusSeeOther)
+			}
 		} else {
 			http.Redirect(w, r, "/bucketlist?successM=Bucket created succcesfully", http.StatusSeeOther)
 		}
 	}
 
+}
+
+// DeleteBucketAction handler to delete bucket in s3
+func DeleteBucketAction(w http.ResponseWriter, r *http.Request) {
+
+	svc := s3.New(sess)
+
+	pageVars := PageVars{}
+	addPageVars(r, &pageVars)
+
+	if len(pageVars.BName) <= 0 {
+		http.Redirect(w, r, "/bucketlist?bucketName="+pageVars.BName+"&errorM=Invalid bucket namee", http.StatusSeeOther)
+	} else {
+		_, err := svc.DeleteBucket(&s3.DeleteBucketInput{
+			Bucket: aws.String(pageVars.BName),
+		})
+
+		if err != nil {
+			if awsErr, ok := err.(awserr.Error); ok {
+				http.Redirect(w, r, "/bucketlist?errorM="+awsErr.Message(), http.StatusSeeOther)
+			} else {
+				http.Redirect(w, r, "/bucketlist?errorM=Failed to delete bucket", http.StatusSeeOther)
+			}
+		} else {
+			err = svc.WaitUntilBucketNotExists(&s3.HeadBucketInput{
+				Bucket: aws.String(pageVars.BName),
+			})
+			if err != nil {
+				if awsErr, ok := err.(awserr.Error); ok {
+					// process SDK error
+					http.Redirect(w, r, "/bucketlist?errorM="+awsErr.Message(), http.StatusSeeOther)
+				} else {
+					http.Redirect(w, r, "/bucketlist?errorM=Failed to delete bucket", http.StatusSeeOther)
+				}
+			} else {
+				http.Redirect(w, r, "/bucketlist?successM=Successfully deleted", http.StatusSeeOther)
+			}
+		}
+
+	}
 }
