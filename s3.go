@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -35,8 +36,8 @@ func ListBuckets(w http.ResponseWriter, r *http.Request) {
 	render(w, "bucketlist", pageVars)
 }
 
-// GetObjects for listing objects
-func GetObjects(w http.ResponseWriter, r *http.Request) {
+// ListObjects for listing objects
+func ListObjects(w http.ResponseWriter, r *http.Request) {
 
 	svc := s3.New(sess)
 
@@ -49,10 +50,23 @@ func GetObjects(w http.ResponseWriter, r *http.Request) {
 		}
 		render(w, "objectlist", pageVars)
 	} else {
-		bucket := aws.String(pageVars.BName)
+
+		if len(pageVars.Prefix) <= 0 {
+			pageVars.Prefix = ""
+		}
+
+		if len(pageVars.Delimiter) <= 0 {
+			pageVars.Delimiter = ""
+		}
+
+		fmt.Println(pageVars)
 
 		// Get the list of items
-		resp, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: bucket})
+		resp, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{
+			Bucket: aws.String(pageVars.BName),
+			Prefix: aws.String(pageVars.Prefix),
+			Delimiter: aws.String(pageVars.Delimiter),
+		})
 
 		if err != nil {
 			if awsErr, ok := err.(awserr.Error); ok {
@@ -61,7 +75,45 @@ func GetObjects(w http.ResponseWriter, r *http.Request) {
 				pageVars.ErrorM = "Failed to get objects"
 			}
 		} else {
-			pageVars.OList = resp.Contents
+			for _, o := range resp.Contents {
+				var shouldAdd = true
+				// check how many / in prefix
+				ns := strings.Count(pageVars.Prefix, "/")
+				// check if its folder
+				if strings.HasSuffix(*o.Key, "/") {					
+					// check if its top level folder
+					if strings.Count(*o.Key, "/") == (ns + 1) {
+						shouldAdd = true
+					} else {
+						shouldAdd = false
+					}
+				} else {
+					// check if its top level folder
+					if strings.Count(*o.Key, "/") == ns {
+						shouldAdd = true
+					} else {
+						shouldAdd = false
+					}
+				}
+
+				if shouldAdd {
+					pageVars.OList = append(pageVars.OList, o)
+				}				
+			}
+			// add folder names f prefix ends with /
+			sl := strings.Split(pageVars.Prefix, "/")
+			pp := ""
+			// remove last element as its empy due to trailing /
+			if len(sl) > 0 {
+				sl = sl[:len(sl)-1]
+				for _, fld := range sl {
+					pp = pp+fld+"/"
+					pageVars.FList = append(pageVars.FList, FolderDetails{fld, pp})					
+				}
+				
+				pageVars.FCount = len(pageVars.FList)
+			}
+			
 		}
 
 		render(w, "objectlist", pageVars)

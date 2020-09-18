@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -17,10 +18,25 @@ import (
 type PageVars struct {
 	BList    []*s3.Bucket
 	OList    []*s3.Object
+	// Bucket name
 	BName    string
+	// File name
 	FName    string
+	Prefix string
+	Delimiter string
+	// Folder list
+	FList []FolderDetails
+	// Folder count
+	FCount int
 	ErrorM   string
 	SuccessM string
+}
+
+// FolderDetails struct
+type FolderDetails struct {
+	Name string
+	// Prefix until the current folder
+	PrevPrefix string
 }
 
 // AwsCred for connection
@@ -37,6 +53,7 @@ func init() {
 	//parse the template file held in the templates folder
 	//add the custom add function to template
 	funcs := template.FuncMap{"add": add}
+	funcs["getPrevPrefix"] = getPrevPrefix
 	tpl = template.Must(template.New("*").Funcs(funcs).ParseGlob("templates/*"))
 
 	// create aws session
@@ -53,7 +70,7 @@ func main() {
 
 	// when navigating to /home it should serve the home page
 	http.HandleFunc("/", ListBuckets)
-	http.HandleFunc("/objectlist", GetObjects)
+	http.HandleFunc("/objectlist", ListObjects)
 	http.HandleFunc("/uploadfile", UploadFile)
 	http.HandleFunc("/uploadaction", UploadAction)
 	http.HandleFunc("/downloadfileaction", DownloadFileAction)
@@ -134,6 +151,14 @@ func add(x, y int) int {
 	return x + y
 }
 
+func getPrevPrefix(p, f string) string {
+	// user := p[:strings.Index(p, f)]
+	fmt.Println(strings.Index(p, f))
+	fmt.Println(p)
+	fmt.Println(f)
+	return "hi"
+}
+
 func exitErrorf(msg string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, msg+"\n", args...)
 	os.Exit(1)
@@ -147,6 +172,14 @@ func addPageVars(r *http.Request, p *PageVars) {
 	fileName := r.URL.Query().Get("fileName")
 	if len(fileName) > 0 {
 		p.FName = fileName
+	}
+	prefix := r.URL.Query().Get("prefix")
+	if len(prefix) > 0 {
+		p.Prefix = prefix
+	}
+	delimiter := r.URL.Query().Get("delimiter")
+	if len(delimiter) > 0 {
+		p.Delimiter = delimiter
 	}
 	errorM := r.URL.Query().Get("errorM")
 	if len(errorM) > 0 {

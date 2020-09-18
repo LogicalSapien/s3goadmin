@@ -4,9 +4,24 @@
     <!-- Page Heading -->
     <nav>
       <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/">Buckets</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ .BName}}&nbsp;&nbsp;
-          <a href="/uploadfile?bucketName={{.BName}}"><i class="mt-1 fa fa-upload"></a></i></li>
+        <li class="breadcrumb-item"><a href="/">Buckets</a></li>        
+        {{ if .FList }}
+          <!-- if prefix is available bucketname is the active in breadcrumb -->
+          <li class="breadcrumb-item"><a href="/objectlist?bucketName={{$.BName}}">{{ .BName}}</a></li>
+        {{ else }}
+          <!-- if prefix is available buckettname should have link -->
+          <li class="breadcrumb-item active" aria-current="page">{{ .BName}}</li>
+        {{ end }}        
+        <!-- iterate over folder list  -->
+        {{ range $ind, $fld := .FList }}
+            {{ if (eq (add $ind 1) $.FCount) }}
+              <li class="breadcrumb-item active" aria-current="page">{{ .Name}}</li>
+            {{ else }}
+              <li class="breadcrumb-item"><a href="/objectlist?bucketName={{$.BName}}&prefix={{ .PrevPrefix}}">{{ .Name}}</a></li>
+            {{ end }}
+         {{ end }} 
+        <!-- <li class="breadcrumb-item">
+          <a href="/uploadfile?bucketName={{.BName}}"><i class="mt-1 fa fa-upload"></i></a></li> -->
       </ol>
     </nav>
     <div class="row">
@@ -30,7 +45,7 @@
                 {{ range $index, $a := .OList }}
                 <tr>
                   <th scope="row">{{add $index 1}}</th>
-                  <td><a href="">{{ .Key}}</a> &nbsp;
+                  <td><a  href="/objectlist?bucketName={{$.BName}}&prefix={{ .Key}}">{{ .Key}}</a> &nbsp;
                       <a class="download" href="/downloadfileaction?bucketName={{$.BName}}&fileName={{ .Key}}"><i class="fa fa-download"></a></td>
                   <td>{{ .LastModified}}</td>
                   <td>{{ .Size}}</td>
