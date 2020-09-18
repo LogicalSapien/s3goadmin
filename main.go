@@ -18,6 +18,7 @@ type PageVars struct {
 	BList    []*s3.Bucket
 	OList    []*s3.Object
 	BName    string
+	FName    string
 	ErrorM   string
 	SuccessM string
 }
@@ -56,6 +57,9 @@ func main() {
 	http.HandleFunc("/uploadfile", UploadFile)
 	http.HandleFunc("/uploadaction", PutFile)
 	http.HandleFunc("/downloadfile", DownloadFile)
+	http.HandleFunc("/deleteaction", DeleteItem)
+	http.HandleFunc("/createbucket", CreateBucket)
+	http.HandleFunc("/createbucketaction", CreateBucketAction)
 	http.ListenAndServe(getPort(), nil)
 
 }
@@ -138,6 +142,10 @@ func addPageVars(r *http.Request, p *PageVars) {
 	bucketName := r.URL.Query().Get("bucketName")
 	if len(bucketName) > 0 {
 		p.BName = bucketName
+	}
+	fileName := r.URL.Query().Get("fileName")
+	if len(fileName) > 0 {
+		p.FName = fileName
 	}
 	errorM := r.URL.Query().Get("errorM")
 	if len(errorM) > 0 {

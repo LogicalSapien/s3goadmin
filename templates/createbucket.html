@@ -1,12 +1,11 @@
 
-{{ define "uploadfile" }}
+{{ define "createbucket" }}
   {{ template "header" .}}
     <!-- Page Heading -->
     <nav>
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="/">Buckets</a></li>
-        <li class="breadcrumb-item active" aria-current="page"><a href="/objectlist?bucketName={{.BName}}">{{ .BName}}</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Upload</li>
+        <li class="breadcrumb-item active" aria-current="page">Create Bucket</li>
       </ol>
     </nav>
     <div class="row">
@@ -15,9 +14,8 @@
         <div class="card shadow mb-4">
           <!-- Card Body -->
           <div class="card-body">            
-            <form enctype="multipart/form-data" action="/uploadaction?bucketName={{.BName}}" method="post">
-              <input type="file" name="uploadfile" />
-              <input type="hidden" name="bucketName" value="{{.BName}}"/>
+            <form action="/createbucketaction" method="post">
+              <input type="text" name="bucketName" requir ed>
               <input type="submit" value="Upload" class="btn btn-primary" />
           </form>  
           </div>

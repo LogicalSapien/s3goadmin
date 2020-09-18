@@ -18,6 +18,7 @@ func ListBuckets(w http.ResponseWriter, r *http.Request) {
 	// get bucket list fomr s3 api
 	result, err := svc.ListBuckets(nil)
 	pageVars := PageVars{}
+	addPageVars(r, &pageVars)
 	if err != nil {
 		pageVars.ErrorM = "Failed to load buckets list"
 	} else {
@@ -146,6 +147,77 @@ func DownloadFile(w http.ResponseWriter, r *http.Request) {
 
 			//stream the body to the client without fully loading it into memory
 			io.Copy(w, file)
+		}
+	}
+
+}
+
+// DeleteItem handler to delete items in s3
+func DeleteItem(w http.ResponseWriter, r *http.Request) {
+
+	svc := s3.New(sess)
+
+	pageVars := PageVars{}
+	addPageVars(r, &pageVars)
+
+	if len(pageVars.BName) <= 0 {
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Invalid bucket namee", http.StatusSeeOther)
+	} else if len(pageVars.FName) <= 0 {
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.FName+"&errorM=Invalid file namee", http.StatusSeeOther)
+	} else {
+		bucket := aws.String(pageVars.BName)
+		item := aws.String(pageVars.FName)
+
+		_, err := svc.DeleteObject(&s3.DeleteObjectInput{
+			Bucket: bucket,
+			Key:    item,
+		})
+
+		if err != nil {
+			http.Redirect(w, r, "/objectlist?bucketName="+pageVars.FName+"&errorM=Failed to delete", http.StatusSeeOther)
+		} else {
+			err = svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
+				Bucket: bucket,
+				Key:    item,
+			})
+			if err != nil {
+				http.Redirect(w, r, "/objectlist?bucketName="+pageVars.FName+"&errorM=Failed to delete", http.StatusSeeOther)
+			} else {
+				http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&successM=Successfully deleted", http.StatusSeeOther)
+			}
+		}
+
+	}
+}
+
+// CreateBucket is handler for /createbucket renders the createbucket.html
+func CreateBucket(w http.ResponseWriter, r *http.Request) {
+
+	pageVars := PageVars{}
+	addPageVars(r, &pageVars)
+
+	render(w, "createbucket", pageVars)
+}
+
+// CreateBucketAction is handler for crreating a bucket
+func CreateBucketAction(w http.ResponseWriter, r *http.Request) {
+
+	// Create S3 service client
+	svc := s3.New(sess)
+
+	bucket := r.FormValue("bucketName")
+
+	if len(bucket) <= 0 {
+		http.Redirect(w, r, "/createbucket?errorM=No bucket name specified", http.StatusSeeOther)
+	} else {
+		// Create the S3 Bucket
+		_, err := svc.CreateBucket(&s3.CreateBucketInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			http.Redirect(w, r, "/bucketlist?errorM=Failed to create bucket", http.StatusSeeOther)
+		} else {
+			http.Redirect(w, r, "/bucketlist?successM=Bucket created succcesfully", http.StatusSeeOther)
 		}
 	}
 

@@ -23,7 +23,7 @@
                   <th scope="col">Last Modified</th>
                   <th scope="col">Size</th>
                   <th scope="col">Storage Class</th>
-                  <th scope="col">Action</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -35,7 +35,10 @@
                   <td>{{ .LastModified}}</td>
                   <td>{{ .Size}}</td>
                   <td>{{ .StorageClass}}</td>
-                  <td><a href="/downloadfile?bucketName={{$.BName}}&fileName={{ .Key}}"><i class="fa fa-download"></a></td>
+                  <td><a href="/downloadfile?bucketName={{$.BName}}&fileName={{ .Key}}"><i class="fa fa-download"></i></a>
+                    &nbsp;<a href="#" class="trigger-btn"  data-toggle="modal"
+                            data-target="#deleteModal" data-key="{{ .Key}}" data-bucketname="{{ $.BName}}"><i class="fa fa-trash"></i></a>                   
+                  </td>
                 </tr>
                 {{ end }} 
               </tbody>
@@ -45,5 +48,36 @@
       </div>
       
     </div>
+
+    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteModalLabel"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i>&nbsp;Alert</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <h5 class="modal-question" id="h2Id">Are you sure ? </h5>          
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <a href="/deleteaction"><button type="button" class="btn btn-danger">YES</button></a>          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      $('#deleteModal').on('show.bs.modal', function (event) {
+      var button = $(event.relatedTarget) // Button that triggered the modal
+      var fileName = button.data('key') // Extract info from data-* attributes
+      var bucketName = button.data('bucketname')
+      var modal = $(this)
+      $("#h2Id").text('Do you really want to delete the file :  ' + fileName);
+      $("a[href*='/deleteaction']").attr('href', '/deleteaction?bucketName=' + bucketName + '&fileName=' + fileName)
+    })
+    </script>
+                    
   {{ template "footer" }}
 {{ end }}           

@@ -4,7 +4,8 @@
     <!-- Page Heading -->
     <nav>
       <ol class="breadcrumb">
-        <li class="breadcrumb-item active">Buckets</li>
+        <li class="breadcrumb-item active">Buckets</li> &nbsp;&nbsp;
+              <a href="/createbucket"><i class="mt-1 fa fa-plus" aria-hidden="true"></i></a>
       </ol>
     </nav>
     <div class="row">
@@ -19,6 +20,7 @@
                   <th scope="col">#</th>
                   <th scope="col">Name</th>
                   <th scope="col">Created</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -27,6 +29,9 @@
                   <th scope="row">{{add $index 1}}</th>
                   <td><a href="/objectlist?bucketName={{.Name}}">{{.Name}}</a></td>
                   <td>{{.CreationDate}}</td>
+                  <td><a href="#" class="trigger-btn"  data-toggle="modal"
+                            data-target="#deleteModal" data-bucketname="{{.Name}}"><i class="fa fa-trash"></i></a>                   
+                  </td>
                 </tr>
                 {{ end }} 
               </tbody>
@@ -36,5 +41,34 @@
       </div>
       
     </div>
+
+    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteModalLabel"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i>&nbsp;Alert</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <h5 class="modal-question" id="h2Id">Are you sure ? </h5>          
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <a href="/deleteaction"><button type="button" class="btn btn-danger">YES</button></a>          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      $('#deleteModal').on('show.bs.modal', function (event) {
+      var button = $(event.relatedTarget) // Button that triggered the modal
+      var bucketName = button.data('bucketname')
+      var modal = $(this)
+      $("#h2Id").text('Do you really want to delete the bucket :  ' + bucketName);
+      $("a[href*='/deleteaction']").attr('href', '/deleteaction?bucketName=' + bucketName)
+    })
+    </script>
   {{ template "footer" }}
-{{ end }}           
+{{ end }}
