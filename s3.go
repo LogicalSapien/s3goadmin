@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -149,8 +148,6 @@ func DownloadFileAction(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Error in downloading", http.StatusSeeOther)
 		} else {
-			defer file.Close()
-
 			downloader := s3manager.NewDownloader(sess)
 
 			_, err = downloader.Download(file,
@@ -174,7 +171,8 @@ func DownloadFileAction(w http.ResponseWriter, r *http.Request) {
 				//stream the body to the client without fully loading it into memory
 				io.Copy(w, file)
 			}
-			os.Remove(*filenameReplaced)
+			file.Close()
+			err = os.Remove(*filenameReplaced)
 		}
 	}
 
