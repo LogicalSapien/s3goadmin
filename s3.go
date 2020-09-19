@@ -94,10 +94,20 @@ func ListObjects(w http.ResponseWriter, r *http.Request) {
 					} else {
 						shouldAdd = false
 					}
-				}
+				}				
 
 				if shouldAdd {
-					pageVars.OList = append(pageVars.OList, o)
+					name := *o.Key					
+					if len(pageVars.Prefix) > 0 {
+						name = strings.Replace(name, pageVars.Prefix, "", -1)
+					}
+					if strings.HasSuffix(*o.Key, "/") {
+						od := ObjectDetails{*o.Key, name, *o.LastModified, *o.Size, *o.StorageClass, "Folder"}
+						pageVars.OList = append(pageVars.OList, od)
+					} else {
+						od := ObjectDetails{*o.Key, name, *o.LastModified, *o.Size, *o.StorageClass, "File"}
+						pageVars.OList = append(pageVars.OList, od)
+					}														
 				}				
 			}
 			// add folder names f prefix ends with /
@@ -128,7 +138,7 @@ func UploadAction(w http.ResponseWriter, r *http.Request) {
 	addPageVars(r, &pageVars)
 
 	if len(pageVars.BName) <= 0 {
-		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Invalid bucket namee", http.StatusSeeOther)
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Invalid bucket namee", http.StatusSeeOther)
 	} else {
 		bucket := aws.String(pageVars.BName)
 		// Maximum upload of 1024 MB files
@@ -141,9 +151,13 @@ func UploadAction(w http.ResponseWriter, r *http.Request) {
 		defer file.Close()
 
 		if err != nil {
-			http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Error uploading the file", http.StatusSeeOther)
+			http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Error uploading the file", http.StatusSeeOther)
 		} else {
-			filename := aws.String(handler.Filename)
+			fn := handler.Filename
+			if len(pageVars.Prefix) > 0 {
+				fn = pageVars.Prefix + "/" + fn
+			}
+			filename := aws.String(fn)
 
 			uploader := s3manager.NewUploader(sess)
 
@@ -155,12 +169,12 @@ func UploadAction(w http.ResponseWriter, r *http.Request) {
 
 			if err != nil {
 				if awsErr, ok := err.(awserr.Error); ok {
-					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM="+awsErr.Message(), http.StatusSeeOther)
+					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM="+awsErr.Message(), http.StatusSeeOther)
 				} else {
-					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Error in uploading to S3", http.StatusSeeOther)
+					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Error in uploading to S3", http.StatusSeeOther)
 				}
 			} else {
-				http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&successM=Successfully uploaded", http.StatusSeeOther)
+				http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&successM=Successfully uploaded", http.StatusSeeOther)
 			}
 		}
 	}
@@ -170,10 +184,21 @@ func UploadAction(w http.ResponseWriter, r *http.Request) {
 // UploadFile is handler for /uploadfile renders the uploadfile.html
 func UploadFile(w http.ResponseWriter, r *http.Request) {
 
-	bp := r.URL.Query().Get("bucketName")
+	pageVars := PageVars{}
+	addPageVars(r, &pageVars)
 
-	pageVars := PageVars{
-		BName: bp,
+	// add folder names f prefix ends with /
+	sl := strings.Split(pageVars.Prefix, "/")
+	pp := ""
+	// remove last element as its empy due to trailing /
+	if len(sl) > 0 {
+		sl = sl[:len(sl)-1]
+		for _, fld := range sl {
+			pp = pp+fld+"/"
+			pageVars.FList = append(pageVars.FList, FolderDetails{fld, pp})					
+		}
+		
+		pageVars.FCount = len(pageVars.FList)
 	}
 
 	render(w, "uploadfile", pageVars)
@@ -190,15 +215,15 @@ func DownloadFileAction(w http.ResponseWriter, r *http.Request) {
 	filenameReplaced := aws.String(strings.Replace(pageVars.FName, "/", "_", -1))
 
 	if len(pageVars.BName) <= 0 {
-		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Invalid bucket namee", http.StatusSeeOther)
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Invalid bucket namee", http.StatusSeeOther)
 	} else if len(pageVars.FName) <= 0 {
-		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Invalid file name", http.StatusSeeOther)
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Invalid file name", http.StatusSeeOther)
 	} else {
 
 		file, err := os.Create(*filenameReplaced)
 
 		if err != nil {
-			http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Error in downloading", http.StatusSeeOther)
+			http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Error in downloading", http.StatusSeeOther)
 		} else {
 			downloader := s3manager.NewDownloader(sess)
 
@@ -210,9 +235,9 @@ func DownloadFileAction(w http.ResponseWriter, r *http.Request) {
 
 			if err != nil {
 				if awsErr, ok := err.(awserr.Error); ok {
-					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM="+awsErr.Message(), http.StatusSeeOther)
+					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM="+awsErr.Message(), http.StatusSeeOther)
 				} else {
-					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Failed to get object", http.StatusSeeOther)
+					http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Failed to get object", http.StatusSeeOther)
 				}
 			} else {
 				//copy the relevant headers. If you want to preserve the downloaded file name, extract it with go's url parser.

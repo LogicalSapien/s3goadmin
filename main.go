@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -17,7 +18,7 @@ import (
 // PageVars structs
 type PageVars struct {
 	BList    []*s3.Bucket
-	OList    []*s3.Object
+	OList    []ObjectDetails
 	// Bucket name
 	BName    string
 	// File name
@@ -30,6 +31,17 @@ type PageVars struct {
 	FCount int
 	ErrorM   string
 	SuccessM string
+}
+
+// ObjectDetails struct
+type ObjectDetails struct {
+	Key string
+	Name string
+	LastModified time.Time
+	Size int64
+	StorageClass string
+	// Folder, File
+	Type string
 }
 
 // FolderDetails struct

@@ -4,18 +4,31 @@
     <!-- Page Heading -->
     <nav>
       <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/">Buckets</a></li>
-        <li class="breadcrumb-item active" aria-current="page"><a href="/objectlist?bucketName={{.BName}}">{{ .BName}}</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Upload</li>
+        <li class="breadcrumb-item"><a href="/">Buckets</a></li>        
+          <!-- if prefix is available bucketname is the active in breadcrumb -->
+        <li class="breadcrumb-item"><a href="/objectlist?bucketName={{.BName}}">{{ .BName}}</a></li>      
+        <!-- iterate over folder list  -->
+        {{ range $ind, $fld := .FList }}
+            {{ if (eq (add $ind 1) $.FCount) }}
+              <li class="breadcrumb-item" aria-current="page">
+                <a href="/objectlist?bucketName={{$.BName}}&prefix={{ .PrevPrefix}}">{{ .Name}}</a>                
+              </li>
+            {{ else }}
+              <li class="breadcrumb-item" aria-current="page">
+                <a href="/objectlist?bucketName={{$.BName}}&prefix={{ .PrevPrefix}}">{{ .Name}}</a></li>
+            {{ end }}
+         {{ end }} 
+         <li class="breadcrumb-item active" aria-current="page">Upload</li>
+        <!-- <li class="breadcrumb-item">
+          <a href="/uploadfile?bucketName={{.BName}}"><i class="mt-1 fa fa-upload"></i></a></li> -->
       </ol>
     </nav>
     <div class="row">
-
       <div class="col-xl-12 col-lg-12">
         <div class="card shadow mb-4">
           <!-- Card Body -->
           <div class="card-body">            
-            <form enctype="multipart/form-data" action="/uploadaction?bucketName={{.BName}}" method="post">
+            <form enctype="multipart/form-data" action="/uploadaction?bucketName={{.BName}}&prefix={{$.Prefix}}" method="post">
               <input type="file" name="uploadfile" />
               <input type="hidden" name="bucketName" value="{{.BName}}"/>
               <input type="submit" value="Upload" class="btn btn-primary" />

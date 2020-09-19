@@ -11,11 +11,14 @@
         {{ else }}
           <!-- if prefix is available buckettname should have link -->
           <li class="breadcrumb-item active" aria-current="page">{{ .BName}}</li>
+          &nbsp;&nbsp;<a href="/uploadfile?bucketName={{.BName}}&prefix={{.Prefix}}"><i class="mt-1 fa fa-upload"></i></a>
         {{ end }}        
         <!-- iterate over folder list  -->
         {{ range $ind, $fld := .FList }}
             {{ if (eq (add $ind 1) $.FCount) }}
-              <li class="breadcrumb-item active" aria-current="page">{{ .Name}}</li>
+              <li class="breadcrumb-item active" aria-current="page">{{ .Name}}
+                &nbsp;<a href="/uploadfile?bucketName={{$.BName}}&prefix={{$.Prefix}}"><i class="mt-1 fa fa-upload"></i></a>
+              </li>
             {{ else }}
               <li class="breadcrumb-item"><a href="/objectlist?bucketName={{$.BName}}&prefix={{ .PrevPrefix}}">{{ .Name}}</a></li>
             {{ end }}
@@ -45,13 +48,23 @@
                 {{ range $index, $a := .OList }}
                 <tr>
                   <th scope="row">{{add $index 1}}</th>
-                  <td><a  href="/objectlist?bucketName={{$.BName}}&prefix={{ .Key}}">{{ .Key}}</a> &nbsp;
-                      <a class="download" href="/downloadfileaction?bucketName={{$.BName}}&fileName={{ .Key}}"><i class="fa fa-download"></a></td>
+                  <td>
+                    <!-- If file, need to show file details, if folder, show inside folder -->
+                    {{ if (eq .Type "Folder") }}
+                      <a  href="/objectlist?bucketName={{$.BName}}&prefix={{ .Key}}">{{ .Name}}</a>                    
+                    {{ else }}
+                      <a  href="/objectdetails?bucketName={{$.BName}}&fileName={{ .Key}}">{{ .Name}}</a>
+                    {{ end }}                   
+                  </td>
                   <td>{{ .LastModified}}</td>
                   <td>{{ .Size}}</td>
                   <td>{{ .StorageClass}}</td>
-                  <td><a href="/downloadfileaction?bucketName={{$.BName}}&fileName={{ .Key}}"><i class="fa fa-download"></i></a>
-                    &nbsp;<a href="#" class="trigger-btn"  data-toggle="modal"
+                  <td>
+                    {{ if (eq .Type "File") }}
+                     <a href="/downloadfileaction?bucketName={{$.BName}}&prefix={{ .Key}}&fileName={{ .Key}}"><i class="fa fa-download"></i></a>
+                     &nbsp;
+                    {{ end }}  
+                    <a href="#" class="trigger-btn"  data-toggle="modal"
                             data-target="#deleteModal" data-key="{{ .Key}}" data-bucketname="{{ $.BName}}"><i class="fa fa-trash"></i></a>                   
                   </td>
                 </tr>
