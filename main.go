@@ -89,7 +89,10 @@ func main() {
 	http.HandleFunc("/deleteobjectaction", DeleteObjectAction)
 	http.HandleFunc("/createbucket", CreateBucket)
 	http.HandleFunc("/createbucketaction", CreateBucketAction)
-	http.HandleFunc("/deletebucketaction", DeleteBucketAction)
+	http.HandleFunc("/deletebucketaction", DeleteBucketAction)	
+	http.HandleFunc("/createfolder", CreateFolder)
+	http.HandleFunc("/createfolderaction", CreateFolderAction)
+	
 	http.ListenAndServe(getPort(), nil)
 
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -58,8 +57,6 @@ func ListObjects(w http.ResponseWriter, r *http.Request) {
 		if len(pageVars.Delimiter) <= 0 {
 			pageVars.Delimiter = ""
 		}
-
-		fmt.Println(pageVars)
 
 		// Get the list of items
 		resp, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{
@@ -138,7 +135,7 @@ func UploadAction(w http.ResponseWriter, r *http.Request) {
 	addPageVars(r, &pageVars)
 
 	if len(pageVars.BName) <= 0 {
-		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Invalid bucket namee", http.StatusSeeOther)
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Invalid bucket name", http.StatusSeeOther)
 	} else {
 		bucket := aws.String(pageVars.BName)
 		// Maximum upload of 1024 MB files
@@ -215,7 +212,7 @@ func DownloadFileAction(w http.ResponseWriter, r *http.Request) {
 	filenameReplaced := aws.String(strings.Replace(pageVars.FName, "/", "_", -1))
 
 	if len(pageVars.BName) <= 0 {
-		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Invalid bucket namee", http.StatusSeeOther)
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Invalid bucket name", http.StatusSeeOther)
 	} else if len(pageVars.FName) <= 0 {
 		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Invalid file name", http.StatusSeeOther)
 	} else {
@@ -264,7 +261,7 @@ func DeleteObjectAction(w http.ResponseWriter, r *http.Request) {
 	addPageVars(r, &pageVars)
 
 	if len(pageVars.BName) <= 0 {
-		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Invalid bucket namee", http.StatusSeeOther)
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Invalid bucket name", http.StatusSeeOther)
 	} else if len(pageVars.FName) <= 0 {
 		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&errorM=Invalid file name", http.StatusSeeOther)
 	} else {
@@ -348,7 +345,7 @@ func DeleteBucketAction(w http.ResponseWriter, r *http.Request) {
 	addPageVars(r, &pageVars)
 
 	if len(pageVars.BName) <= 0 {
-		http.Redirect(w, r, "/bucketlist?bucketName="+pageVars.BName+"&errorM=Invalid bucket namee", http.StatusSeeOther)
+		http.Redirect(w, r, "/bucketlist?bucketName="+pageVars.BName+"&errorM=Invalid bucket name", http.StatusSeeOther)
 	} else {
 		_, err := svc.DeleteBucket(&s3.DeleteBucketInput{
 			Bucket: aws.String(pageVars.BName),
@@ -377,4 +374,67 @@ func DeleteBucketAction(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
+}
+
+// CreateFolder is handler for /createfolder renders the createfolder.html
+func CreateFolder(w http.ResponseWriter, r *http.Request) {
+
+	pageVars := PageVars{}
+	addPageVars(r, &pageVars)
+
+	// add folder names f prefix ends with /
+	sl := strings.Split(pageVars.Prefix, "/")
+	pp := ""
+	// remove last element as its empy due to trailing /
+	if len(sl) > 0 {
+		sl = sl[:len(sl)-1]
+		for _, fld := range sl {
+			pp = pp+fld+"/"
+			pageVars.FList = append(pageVars.FList, FolderDetails{fld, pp})					
+		}
+		
+		pageVars.FCount = len(pageVars.FList)
+	}
+
+	render(w, "createfolder", pageVars)
+}
+
+// CreateFolderAction to create folders in aws s3
+func CreateFolderAction(w http.ResponseWriter, r *http.Request) {
+
+	pageVars := PageVars{}
+	addPageVars(r, &pageVars)
+
+	folderName := r.FormValue("folderName")
+
+	if len(pageVars.BName) <= 0 {
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Invalid bucket name", http.StatusSeeOther)
+	} else if len(folderName) <= 0 {
+		http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Invalid folder name", http.StatusSeeOther)
+	} else {
+		bucket := aws.String(pageVars.BName)
+
+		if (len(pageVars.Prefix) > 0) && strings.HasSuffix(pageVars.Prefix, "/") {
+			folderName = pageVars.Prefix + folderName
+		}
+
+		svc := s3.New(sess)
+
+		_, err := svc.PutObject(&s3.PutObjectInput{
+			Bucket: bucket,
+			Key:    aws.String(folderName + "/"),	
+			ContentLength: aws.Int64(0),
+		})
+
+		if err != nil {
+			if awsErr, ok := err.(awserr.Error); ok {
+				http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM="+awsErr.Message(), http.StatusSeeOther)
+			} else {
+				http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&errorM=Error in creating folder", http.StatusSeeOther)
+			}
+		} else {
+			http.Redirect(w, r, "/objectlist?bucketName="+pageVars.BName+"&prefix="+pageVars.Prefix+"&successM=Successfully created", http.StatusSeeOther)
+		}
+	}
+
 }

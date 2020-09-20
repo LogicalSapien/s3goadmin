@@ -12,12 +12,14 @@
           <!-- if prefix is available buckettname should have link -->
           <li class="breadcrumb-item active" aria-current="page">{{ .BName}}</li>
           &nbsp;&nbsp;<a href="/uploadfile?bucketName={{.BName}}&prefix={{.Prefix}}"><i class="mt-1 fa fa-upload"></i></a>
+          &nbsp;&nbsp;<a href="/createfolder?bucketName={{$.BName}}&prefix={{$.Prefix}}"><i class="mt-1 fa fa-plus" aria-hidden="true"></i></a>
         {{ end }}        
         <!-- iterate over folder list  -->
         {{ range $ind, $fld := .FList }}
             {{ if (eq (add $ind 1) $.FCount) }}
               <li class="breadcrumb-item active" aria-current="page">{{ .Name}}
                 &nbsp;<a href="/uploadfile?bucketName={{$.BName}}&prefix={{$.Prefix}}"><i class="mt-1 fa fa-upload"></i></a>
+                &nbsp;&nbsp;<a href="/createfolder?bucketName={{$.BName}}&prefix={{$.Prefix}}"><i class="mt-1 fa fa-plus" aria-hidden="true"></i></a>
               </li>
             {{ else }}
               <li class="breadcrumb-item"><a href="/objectlist?bucketName={{$.BName}}&prefix={{ .PrevPrefix}}">{{ .Name}}</a></li>
@@ -27,6 +29,40 @@
           <a href="/uploadfile?bucketName={{.BName}}"><i class="mt-1 fa fa-upload"></i></a></li> -->
       </ol>
     </nav>
+<script>
+  $('.collapse').show()
+</script>
+    <div class="row">
+      <div class="col-xl-12 col-lg-12">
+        <a class="float-right" data-toggle="collapse" href="#collapseExample" role="button" aria-expanded="true" aria-controls="collapseExample">
+          <i class="fa fa-chevron-down" aria-hidden="true"></i></a>
+          <div class="collapse show" id="collapseExample">
+            <div class="card card-body">
+              <form action="/objectlist" method="get">
+                <div class="row">
+                  <div class="col-4 col-xl-4 col-lg-4">
+                    <div class="form-group">
+                      <label for="prefix">Prefix</label>
+                      <input type="text" class="form-control" value="{{.Prefix}}" id="prefix" placeholder="Enter prefix" name="prefix">
+                    </div>                    
+                  </div>
+                  <div class="col-4 col-xl-4 col-lg-4">
+                    <div class="form-group">
+                      <label for="delimiter">Delimiter</label>
+                      <input type="text" class="form-control" value="{{.Delimiter}}" id="delimiter" placeholder="Enter delimiter" name="delimiter">
+                    </div> 
+                  </div>
+                  <div class="col-4 col-xl-4 col-lg-4 mt-4">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                  </div>
+                </div>    
+                <input type="hidden" name="bucketName" value="{{.BName}}"/>            
+              </form>  
+            </div>
+          </div>
+      </div>      
+    </div>    
+
     <div class="row">
 
       <div class="col-xl-12 col-lg-12">

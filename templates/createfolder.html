@@ -1,0 +1,46 @@
+
+{{ define "createfolder" }}
+{{ template "header" .}}
+  <!-- Page Heading -->
+  <nav>
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Buckets</a></li>        
+        <!-- if prefix is available bucketname is the active in breadcrumb -->
+      <li class="breadcrumb-item"><a href="/objectlist?bucketName={{.BName}}">{{ .BName}}</a></li>      
+      <!-- iterate over folder list  -->
+      {{ range $ind, $fld := .FList }}
+          {{ if (eq (add $ind 1) $.FCount) }}
+            <li class="breadcrumb-item" aria-current="page">
+              <a href="/objectlist?bucketName={{$.BName}}&prefix={{ .PrevPrefix}}">{{ .Name}}</a>                
+            </li>
+          {{ else }}
+            <li class="breadcrumb-item" aria-current="page">
+              <a href="/objectlist?bucketName={{$.BName}}&prefix={{ .PrevPrefix}}">{{ .Name}}</a></li>
+          {{ end }}
+       {{ end }} 
+       <li class="breadcrumb-item active" aria-current="page">Create Folder</li>
+      <!-- <li class="breadcrumb-item">
+        <a href="/uploadfile?bucketName={{.BName}}"><i class="mt-1 fa fa-upload"></i></a></li> -->
+    </ol>
+  </nav>
+  <div class="row">
+
+    <div class="col-xl-12 col-lg-12">
+      <div class="card shadow mb-4">
+        <!-- Card Body -->
+        <div class="card-body">            
+          <form action="/createfolderaction?bucketName={{.BName}}&prefix={{$.Prefix}}" method="post">
+            <div class="form-group">
+              <label for="folderName">Folder Name</label>
+              <input type="text" class="form-control" id="folderName" aria-describedby="emailHelp" placeholder="Enter folderName" name="folderName">
+              <small id="emailHelp" class="form-text text-muted">Please enter a valid folder name.</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </form>  
+        </div>
+      </div>
+    </div>
+    
+  </div>
+{{ template "footer" }}
+{{ end }}           
