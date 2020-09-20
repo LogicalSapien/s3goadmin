@@ -92,7 +92,7 @@ func validateSession(f func(http.ResponseWriter, *http.Request)) func(http.Respo
 		userName := sv[0]
 		expSessToken := getStringFromDB("Sessions", userName)
 		if sv[1] != expSessToken {
-			http.Redirect(w, r, "/login?Invalid session", http.StatusSeeOther)		
+			http.Redirect(w, r, "/login?errorM=Invalid session", http.StatusSeeOther)		
 			return
 		}
 
@@ -146,6 +146,6 @@ func LogoutAction(w http.ResponseWriter, r *http.Request) {
 	userName := sv[0]
 	// to logout, delete the stored session
 	deleteKeyString("Sessions", userName)
-	http.Redirect(w, r, "/login?SuccessM=Successfully logged out", http.StatusSeeOther)
+	http.Redirect(w, r, "/login?successM=Successfully logged out", http.StatusSeeOther)
 }
   
