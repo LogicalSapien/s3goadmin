@@ -89,6 +89,7 @@ func main() {
 	http.HandleFunc("/deletebucketaction", validateSession(DeleteBucketAction))	
 	http.HandleFunc("/createfolder", validateSession(CreateFolder))
 	http.HandleFunc("/createfolderaction", validateSession(CreateFolderAction))
+	http.HandleFunc("/logoutaction", LogoutAction)	
 	
 	http.ListenAndServe(getPort(), nil)
 

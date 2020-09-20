@@ -51,14 +51,13 @@ func LoginAction(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Redirect(w, r, "/login?errorM=Unable to create token", http.StatusSeeOther)
 	}
-	// Set the token in the db, along with the user whom it represents
+	// Set the token in the db, along with the userName
 	updateDBString("Sessions", userName, sessionToken.String())
 
 	// set the expiration time
-	expires := time.Now().Add(300 * time.Second)
+	expires := time.Now().Add(600 * time.Second)
 	ck := http.Cookie{
         Name: "JSESSION_ID",
-        Domain: "localhost",
         Path: "/",
 		Expires: expires,
 		Value: userName+"_"+sessionToken.String(),
@@ -85,18 +84,68 @@ func validateSession(f func(http.ResponseWriter, *http.Request)) func(http.Respo
 		}
 		// if no errors, validate the cookie
 		sessToken := c.Value
-		sv := strings.Split(sessToken, "_")
+		sv := strings.Split(sessToken, "_")		
 		if len(sv) != 2 {		
 			http.Redirect(w, r, "/login?errorM=Invalid cookie format", http.StatusSeeOther)
 			return	
 		}
-		expSessToken := getStringFromDB("Sessions", sv[0])
+		userName := sv[0]
+		expSessToken := getStringFromDB("Sessions", userName)
 		if sv[1] != expSessToken {
 			http.Redirect(w, r, "/login?Invalid session", http.StatusSeeOther)		
 			return
 		}
+
+		// after sucess, refresh the cookie	to extend the session
+		// Create a new random session token
+		sessionToken, err := uuid.NewUUID()
+		if err != nil {
+			http.Redirect(w, r, "/login?errorM=Unable to create token", http.StatusSeeOther)
+		}
+		// Set the token in the db, along with the userName
+		updateDBString("Sessions", userName, sessionToken.String())
+
+		// set the expiration time
+		expires := time.Now().Add(600 * time.Second)
+		ck := http.Cookie{
+			Name: "JSESSION_ID",
+			Path: "/",
+			Expires: expires,
+			Value: userName+"_"+sessionToken.String(),
+		}
+
+		// write the cookie to response
+		http.SetCookie(w, &ck)
+
 		// if sucess process the handler		
 		f(w, r)
+		
 	}
+}
+
+
+// LogoutAction to clear session
+func LogoutAction(w http.ResponseWriter, r *http.Request) {
+	// get cookie from request
+	c, err := r.Cookie("JSESSION_ID")
+	if err != nil {
+		if err == http.ErrNoCookie {		
+			http.Redirect(w, r, "/login?errorM=No session present in request", http.StatusSeeOther)
+			return	
+		}
+		http.Redirect(w, r, "/login?errorM=Not authorised", http.StatusSeeOther)
+		return
+	}
+	// if no errors, validate the cookie
+	sessToken := c.Value
+	sv := strings.Split(sessToken, "_")		
+	if len(sv) != 2 {		
+		http.Redirect(w, r, "/login?errorM=Invalid cookie format", http.StatusSeeOther)
+		return	
+	}
+	userName := sv[0]
+	// to logout, delete the stored session
+	deleteKeyString("Sessions", userName)
+	http.Redirect(w, r, "/login?SuccessM=Successfully logged out", http.StatusSeeOther)
 }
   
