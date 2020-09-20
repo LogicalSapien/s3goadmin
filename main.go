@@ -5,13 +5,9 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"os"
-	"strings"
 	"time"
+	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
@@ -58,22 +54,21 @@ type AwsCred struct {
 	Region string
 }
 
-var sess *session.Session
 var tpl *template.Template
 
 func init() {
 	//parse the template file held in the templates folder
 	//add the custom add function to template
 	funcs := template.FuncMap{"add": add}
-	funcs["getPrevPrefix"] = getPrevPrefix
 	tpl = template.Must(template.New("*").Funcs(funcs).ParseGlob("templates/*"))
 
+	// create in memory dba nd intialize with admin user
+	createDb()
 	// create aws session
 	createSession()
-
 }
 
-func main() {
+func main() {	
 
 	// serve everything in the css folder, the img folder and mp3 folder as a file
 	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("css"))))
@@ -81,75 +76,22 @@ func main() {
 	http.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir("js"))))
 
 	// when navigating to /home it should serve the home page
-	http.HandleFunc("/", ListBuckets)
-	http.HandleFunc("/objectlist", ListObjects)
-	http.HandleFunc("/uploadfile", UploadFile)
-	http.HandleFunc("/uploadaction", UploadAction)
-	http.HandleFunc("/downloadfileaction", DownloadFileAction)
-	http.HandleFunc("/deleteobjectaction", DeleteObjectAction)
-	http.HandleFunc("/createbucket", CreateBucket)
-	http.HandleFunc("/createbucketaction", CreateBucketAction)
-	http.HandleFunc("/deletebucketaction", DeleteBucketAction)	
-	http.HandleFunc("/createfolder", CreateFolder)
-	http.HandleFunc("/createfolderaction", CreateFolderAction)
+	http.HandleFunc("/", Login)
+	http.HandleFunc("/loginaction", LoginAction)
+	http.HandleFunc("/listbuckets", validateSession(ListBuckets))
+	http.HandleFunc("/objectlist", validateSession(ListObjects))
+	http.HandleFunc("/uploadfile", validateSession(UploadFile))
+	http.HandleFunc("/uploadaction", validateSession(UploadAction))
+	http.HandleFunc("/downloadfileaction", validateSession(DownloadFileAction))
+	http.HandleFunc("/deleteobjectaction", validateSession(DeleteObjectAction))
+	http.HandleFunc("/createbucket", validateSession(CreateBucket))
+	http.HandleFunc("/createbucketaction", validateSession(CreateBucketAction))
+	http.HandleFunc("/deletebucketaction", validateSession(DeleteBucketAction))	
+	http.HandleFunc("/createfolder", validateSession(CreateFolder))
+	http.HandleFunc("/createfolderaction", validateSession(CreateFolderAction))
 	
 	http.ListenAndServe(getPort(), nil)
 
-}
-
-// Detect $PORT and if present uses it for listen and serve else defaults to :8080
-// This is so that app can run on Heroku
-func getPort() string {
-	p := os.Getenv("PORT")
-	if p != "" {
-		return ":" + p
-	}
-	return ":8080"
-}
-
-func getAwsCred() AwsCred {
-	c := AwsCred{}
-	// Get access Key
-	akey := os.Getenv("ACCESS_KEY")
-	if akey != "" {
-		c.Akey = akey
-	} else {
-		c.Akey = ""
-	}
-	// Get secret key
-	skey := os.Getenv("SECRET_ACCESS")
-	if akey != "" {
-		c.Skey = skey
-	} else {
-		c.Skey = ""
-	}
-	// region
-	reg := os.Getenv("REGION")
-
-	if akey != "" {
-		c.Region = reg
-	} else {
-		c.Region = "us-east-1"
-	}
-	return c
-}
-
-func createSession() {
-	// Initialize a session in provided region that the SDK will use to load
-	// get credentials
-	c := getAwsCred()
-	// credentials can also be in ~/.aws/credentials.
-	s, err := session.NewSession(&aws.Config{
-		Region:      aws.String(c.Region),
-		Credentials: credentials.NewStaticCredentials(c.Akey, c.Skey, "")},
-	)
-
-	if err != nil {
-		exitErrorf("Unable to connect to Server, %v", err)
-	}
-
-	// assign session to global variable
-	sess = s
 }
 
 // for rendeing templates
@@ -164,14 +106,6 @@ func render(w http.ResponseWriter, tmpl string, pageVars PageVars) {
 
 func add(x, y int) int {
 	return x + y
-}
-
-func getPrevPrefix(p, f string) string {
-	// user := p[:strings.Index(p, f)]
-	fmt.Println(strings.Index(p, f))
-	fmt.Println(p)
-	fmt.Println(f)
-	return "hi"
 }
 
 func exitErrorf(msg string, args ...interface{}) {

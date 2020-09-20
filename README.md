@@ -12,8 +12,13 @@ The utility has following features:
 - List Objects
 - Search Objects using prefix & delimited
 - Folder navigation
+- User authenitcation for s3goadmin
+- Session management for s3goadmin
 
-Need to install the aws dependencies to start
+To get started, install the aws dependencies to start
 
  `go get -u github.com/aws/aws-sdk-go`
- 
+
+ `go get github.com/google/uuid`
+
+ `go get -u  go get github.com/boltdb/bolt/`

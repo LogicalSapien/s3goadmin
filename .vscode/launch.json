@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${fileDirname}",
-            "env": {},
+            "env": {"PORT":"8080", "ADMIN_PASS":"", "ACCESS_KEY":"", "SECRET_ACCESS": ""},
             "args": []
         }
     ]

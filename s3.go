@@ -6,10 +6,32 @@ import (
 	"os"
 	"strings"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
+
+var sess *session.Session
+
+func createSession() {
+	// Initialize a session in provided region that the SDK will use to load
+	// get credentials
+	c := getAwsCred()
+	// credentials can also be in ~/.aws/credentials.
+	s, err := session.NewSession(&aws.Config{
+		Region:      aws.String(c.Region),
+		Credentials: credentials.NewStaticCredentials(c.Akey, c.Skey, "")},
+	)
+
+	if err != nil {
+		exitErrorf("Unable to connect to Server, %v", err)
+	}
+
+	// assign session to global variable
+	sess = s
+}
 
 // ListBuckets ishandler for / renders the bucketlist.html
 func ListBuckets(w http.ResponseWriter, r *http.Request) {

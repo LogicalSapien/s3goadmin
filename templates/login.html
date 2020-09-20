@@ -1,0 +1,33 @@
+
+{{ define "login" }}
+  {{ template "header" .}}
+    <!-- Page Heading -->
+    <div class="row">
+
+      <div class="col-xl-12 col-lg-12">
+        <div class="card shadow mb-4">
+          <!-- Card Body -->
+          <div class="card-body">            
+            <form action="/loginaction" method="post">
+              <div class="form-group">
+                <label for="userName">Login here</label>
+                <div class="row">
+                  <div class="col-3">
+                    <input type="text" class="form-control" id="userName" placeholder="Enter Username" name="userName">
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-3">
+                    <input type="password" class="form-control mt-1" id="password" placeholder="Enter password" name="password">
+                  </div>
+                </div>                                            
+              </div>
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </form>  
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  {{ template "footer" }}
+{{ end }}           
