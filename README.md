@@ -22,3 +22,18 @@ To get started, install the aws dependencies to start
  `go get github.com/google/uuid`
 
  `go get -u  go get github.com/boltdb/bolt/`
+
+To build & run locally:
+
+ `go build -o main`
+ 
+ `export ACCESS_KEY=__________`
+ 
+ `export SECRET_ACCESS=__________`
+
+ `./main`
+
+Docker build command
+
+ `docker build -t s3goadmin .`
+
